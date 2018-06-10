@@ -12,7 +12,7 @@ big_integer::big_integer() {
     *this = big_integer(0);
 }
 
-big_integer::~big_integer() {}
+big_integer::~big_integer() = default;
 
 big_integer::big_integer(big_integer const &other) : iuLast(other.iuLast), length(other.length), sign(other.sign) {
     if (iuLast == 0) {
@@ -56,7 +56,7 @@ big_integer::big_integer(int value) {
         *this = big_integer("-2147483648");
     } else {
         small = static_cast<unsigned int>(abs(value));
-        sign = static_cast<bool>(value < 0 ? 0 : 1);
+        sign = static_cast<bool>((value >= 0));
     }
 }
 
@@ -81,7 +81,7 @@ big_integer::big_integer(std::string const &digit) {
         if (i + 9 >= digit.size()) {
             int d = atoi(digit.substr(i, digit.size() - i).c_str());
             foo(d, sign);
-            res *= pow100(digit.size() - i);
+            res *= pow100(static_cast<int>(digit.size() - i));
             res += d;
             break;
         } else {
@@ -134,10 +134,7 @@ big_integer &big_integer::operator*=(big_integer const &reg) {
     int real_sign = this->GetReadSign();
     int real_reg_sign = reg.GetReadSign();
     Mul(reg);
-    if ((real_sign == 0 && real_reg_sign == 1) || (real_sign == 1 && real_reg_sign == 0))
-        sign = 0;
-    else
-        sign = 1;
+    sign = !((real_sign == 0 && real_reg_sign == 1) || (real_sign == 1 && real_reg_sign == 0));
     make_fit(*this);
     //print(*this);
     return *this;
@@ -146,10 +143,7 @@ big_integer &big_integer::operator*=(big_integer const &reg) {
 big_integer &big_integer::operator/=(big_integer const &reg) {
     bool tmp = sign;
     Div(reg);
-    if ((tmp == 0 && reg.sign == 1) || (tmp == 1 && reg.sign == 0))
-        sign = 0;
-    else
-        sign = 1;
+    sign = !((tmp == 0 && reg.sign == 1) || (tmp == 1 && reg.sign == 0));
     make_fit(*this);
     return *this;
 }
@@ -157,10 +151,7 @@ big_integer &big_integer::operator/=(big_integer const &reg) {
 big_integer &big_integer::operator%=(big_integer const &reg) {
     bool tmp = sign;
     Mod(reg);
-    if ((tmp == 0 && reg.sign == 1) || (tmp == 1 && reg.sign == 0))
-        sign = 0;
-    else
-        sign = 1;
+    sign = !((tmp == 0 && reg.sign == 1) || (tmp == 1 && reg.sign == 0));
     make_fit(*this);
     return *this;
 }
@@ -327,7 +318,7 @@ big_integer operator&(big_integer const &left, big_integer const &right) {
         uint yu = (i < b.length) ? (*get_bits_o(b).get())[i] : yE;
         res[i] = xu & yu;
     }
-    return big_integer(res[0], res, (len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 2)).swapForm();
+    return big_integer(res[0], res, static_cast<int>(len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 2)).swapForm();
 }
 
 
@@ -353,7 +344,7 @@ big_integer operator|(big_integer const &left, big_integer const &right) {
         uint yu = (i < b.length) ? (*get_bits_o(b).get())[i] : yE;
         res[i] = xu | yu;
     }
-    return big_integer(res[0], res, (len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 1)).swapForm();
+    return big_integer(res[0], res, static_cast<int>(len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 1)).swapForm();
 }
 
 big_integer operator^(big_integer const &left, big_integer const &right) {
@@ -376,7 +367,7 @@ big_integer operator^(big_integer const &left, big_integer const &right) {
         uint yu = (i < b.length) ? (*get_bits_o(b).get())[i] : yE;
         res[i] = xu ^ yu;
     }
-    return big_integer(res[0], res, (len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 3)).swapForm();
+    return big_integer(res[0], res, static_cast<int>(len - 1 < 0 ? 0 : len - 1), len, GetResSign(a.sign, b.sign, 3)).swapForm();
 }
 
 big_integer operator<<(big_integer const &left, uint b) {
@@ -407,7 +398,7 @@ big_integer operator<<(big_integer const &left, uint b) {
         return big_integer(resSz);
     }
 
-    return big_integer(res[0], res, (sz - 1 < 0 ? 0 : sz - 1), sz, a.sign).swapForm();
+    return big_integer(res[0], res, static_cast<int>(sz - 1 < 0 ? 0 : sz - 1), sz, a.sign).swapForm();
 }
 
 big_integer operator>>(big_integer const &left, uint b) {
@@ -439,7 +430,7 @@ big_integer operator>>(big_integer const &left, uint b) {
     }
 
 
-    big_integer RES = big_integer(res[0], res, (sz - 1 < 0 ? 0 : sz - 1), sz, a.sign);
+    big_integer RES = big_integer(res[0], res, static_cast<int>(sz - 1 < 0 ? 0 : sz - 1), sz, a.sign);
     RES = RES.swapForm();
     return RES;
 }
@@ -460,7 +451,7 @@ void big_integer::SetSizeLazy(size_t len) {
     ptr.reset(new std::vector<unsigned int>(len));
     bits = ptr;
     length = len;
-    iuLast = len - 1;
+    iuLast = static_cast<int>(len - 1);
 }
 
 void big_integer::SetSizeKeep(size_t len, size_t extra) {
@@ -490,7 +481,7 @@ void big_integer::SetSizeKeep(size_t len, size_t extra) {
         if (iuLast == 0)
             (*get_bits.get())[0] = get_small;
     }
-    iuLast = len - 1;
+    iuLast = static_cast<int>(len - 1);
 }
 
 void big_integer::Load(big_integer const &reg, size_t extra) {
